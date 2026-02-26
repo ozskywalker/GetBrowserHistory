@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Browser History Report</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; color: #1a1a1a; background: #f5f5f5; }
+  header { background: #1e293b; color: #f1f5f9; padding: 16px 24px; }
+  header h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  header .meta { font-size: 12px; color: #94a3b8; display: flex; flex-wrap: wrap; gap: 16px; }
+  header .meta span { white-space: nowrap; }
+
+  .tab-bar { display: flex; flex-wrap: wrap; gap: 2px; background: #334155; padding: 8px 16px 0; }
+  .tab-btn { padding: 8px 16px; border: none; border-radius: 4px 4px 0 0; background: #475569; color: #cbd5e1; cursor: pointer; font-size: 13px; font-weight: 500; }
+  .tab-btn:hover { background: #64748b; color: #f1f5f9; }
+  .tab-btn.active { background: #f5f5f5; color: #1e293b; }
+
+  .tab-panel { display: none; padding: 20px 24px; }
+  .tab-panel.active { display: block; }
+
+  .browser-section { margin-bottom: 24px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+  .browser-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #f8fafc; cursor: pointer; user-select: none; border-bottom: 1px solid #e2e8f0; }
+  .browser-header h2 { font-size: 14px; font-weight: 600; color: #334155; }
+  .browser-header .toggle-icon { color: #64748b; font-size: 12px; transition: transform 0.2s; }
+  .browser-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+  .browser-body { padding: 16px; }
+  .browser-body.collapsed { display: none; }
+
+  .data-section { margin-bottom: 20px; }
+  .data-section h3 { font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .filter-bar { margin-bottom: 8px; }
+  .filter-bar input { width: 100%; max-width: 400px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; }
+  .filter-bar input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #f1f5f9; padding: 8px 10px; text-align: left; font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0; cursor: pointer; white-space: nowrap; user-select: none; }
+  th:hover { background: #e2e8f0; }
+  th.sort-asc::after { content: " ▲"; font-size: 10px; }
+  th.sort-desc::after { content: " ▼"; font-size: 10px; }
+  td { padding: 6px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; word-break: break-all; max-width: 400px; }
+  tr:hover td { background: #f8fafc; }
+  td a { color: #3b82f6; text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+
+  .truncation-notice { padding: 8px 12px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 4px; color: #92400e; font-size: 12px; margin-bottom: 8px; }
+  .empty-notice { padding: 12px; color: #94a3b8; font-style: italic; font-size: 13px; }
+  .no-data { padding: 20px; color: #94a3b8; text-align: center; font-style: italic; }
+
+  .warnings-section { margin: 20px 24px; border: 1px solid #fca5a5; border-radius: 8px; overflow: hidden; }
+  .warnings-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #fef2f2; cursor: pointer; }
+  .warnings-header h2 { font-size: 14px; font-weight: 600; color: #dc2626; }
+  .warnings-body { padding: 12px 16px; }
+  .warnings-body ul { list-style: none; }
+  .warnings-body li { padding: 4px 0; font-size: 12px; color: #7f1d1d; border-bottom: 1px solid #fecaca; }
+  .warnings-body li:last-child { border-bottom: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Browser History Report</h1>
+  <div class="meta">
+    <span>Generated: {{.Meta.GeneratedAt.UTC.Format "2006-01-02 15:04:05 UTC"}}</span>
+    <span>Host: {{.Meta.Hostname}}</span>
+    <span>Account: {{.Meta.ExecutingAccount}}</span>
+    <span>Version: {{.Meta.Version}}</span>
+  </div>
+</header>
+
+{{if .Users}}
+<div class="tab-bar" id="tabBar">
+  {{range $i, $u := .Users}}
+  <button class="tab-btn{{if eq $i 0}} active{{end}}" onclick="showTab({{$i}})" id="tab-{{$i}}">{{$u.Username}}</button>
+  {{end}}
+</div>
+
+{{range $i, $u := .Users}}
+<div class="tab-panel{{if eq $i 0}} active{{end}}" id="panel-{{$i}}">
+  {{if $u.Profiles}}
+    {{range $j, $p := $u.Profiles}}
+    <div class="browser-section">
+      <div class="browser-header" onclick="toggleSection(this)" id="bh-{{$i}}-{{$j}}">
+        <h2>{{$p.BrowserName}} — {{base $p.ProfilePath}}</h2>
+        <span class="toggle-icon">▼</span>
+      </div>
+      <div class="browser-body" id="bb-{{$i}}-{{$j}}">
+
+        {{$searches := searchRecords $p.History}}
+        {{if $searches}}
+        <div class="data-section">
+          <h3>Search History ({{len $searches}} queries)</h3>
+          <div class="table-wrap">
+            <table id="sh-{{$i}}-{{$j}}">
+              <thead><tr>
+                <th onclick="sortTable(this, 'sh-{{$i}}-{{$j}}', 0)">Timestamp (UTC)</th>
+                <th onclick="sortTable(this, 'sh-{{$i}}-{{$j}}', 1)">Engine</th>
+                <th onclick="sortTable(this, 'sh-{{$i}}-{{$j}}', 2)">Query</th>
+                <th onclick="sortTable(this, 'sh-{{$i}}-{{$j}}', 3)">URL</th>
+              </tr></thead>
+              <tbody>
+                {{range $searches}}
+                <tr>
+                  <td>{{.LastVisitUTC.UTC.Format "2006-01-02 15:04:05"}}</td>
+                  <td>{{.SearchEngine}}</td>
+                  <td>{{.SearchQuery}}</td>
+                  <td><a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.URL}}</a></td>
+                </tr>
+                {{end}}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {{end}}
+
+        <div class="data-section">
+          <h3>History {{if $p.Truncated}}(showing {{$p.TruncatedAt}} most recent){{else}}({{len $p.History}} rows){{end}}</h3>
+          {{if $p.Truncated}}
+          <div class="truncation-notice">⚠ Results capped at {{$p.TruncatedAt}} rows. Use --max-rows to increase the limit.</div>
+          {{end}}
+          {{if $p.History}}
+          <div class="filter-bar"><input type="text" placeholder="Filter URL or title…" oninput="filterTable(this, 'ht-{{$i}}-{{$j}}')"></div>
+          <div class="table-wrap">
+            <table id="ht-{{$i}}-{{$j}}">
+              <thead><tr>
+                <th onclick="sortTable(this, 'ht-{{$i}}-{{$j}}', 0)">Timestamp (UTC)</th>
+                <th onclick="sortTable(this, 'ht-{{$i}}-{{$j}}', 1)">URL</th>
+                <th onclick="sortTable(this, 'ht-{{$i}}-{{$j}}', 2)">Title</th>
+                <th onclick="sortTable(this, 'ht-{{$i}}-{{$j}}', 3)">Visits</th>
+                <th onclick="sortTable(this, 'ht-{{$i}}-{{$j}}', 4)">Search Query</th>
+              </tr></thead>
+              <tbody>
+                {{range $p.History}}
+                <tr>
+                  <td>{{.LastVisitUTC.UTC.Format "2006-01-02 15:04:05"}}</td>
+                  <td><a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.URL}}</a></td>
+                  <td>{{.Title}}</td>
+                  <td>{{.VisitCount}}</td>
+                  <td>{{.SearchQuery}}</td>
+                </tr>
+                {{end}}
+              </tbody>
+            </table>
+          </div>
+          {{else}}
+          <div class="empty-notice">No history recorded.</div>
+          {{end}}
+        </div>
+
+        <div class="data-section">
+          <h3>Downloads ({{len $p.Downloads}} rows)</h3>
+          {{if $p.Downloads}}
+          <div class="filter-bar"><input type="text" placeholder="Filter path or URL…" oninput="filterTable(this, 'dt-{{$i}}-{{$j}}')"></div>
+          <div class="table-wrap">
+            <table id="dt-{{$i}}-{{$j}}">
+              <thead><tr>
+                <th onclick="sortTable(this, 'dt-{{$i}}-{{$j}}', 0)">Timestamp (UTC)</th>
+                <th onclick="sortTable(this, 'dt-{{$i}}-{{$j}}', 1)">File Path</th>
+                <th onclick="sortTable(this, 'dt-{{$i}}-{{$j}}', 2)">Source URL</th>
+                <th onclick="sortTable(this, 'dt-{{$i}}-{{$j}}', 3)">Bytes</th>
+              </tr></thead>
+              <tbody>
+                {{range $p.Downloads}}
+                <tr>
+                  <td>{{.StartTimeUTC.UTC.Format "2006-01-02 15:04:05"}}</td>
+                  <td>{{.TargetPath}}</td>
+                  <td><a href="{{.SourceURL}}" target="_blank" rel="noopener noreferrer">{{.SourceURL}}</a></td>
+                  <td>{{.TotalBytes}}</td>
+                </tr>
+                {{end}}
+              </tbody>
+            </table>
+          </div>
+          {{else}}
+          <div class="empty-notice">No downloads recorded.</div>
+          {{end}}
+        </div>
+
+      </div>
+    </div>
+    {{end}}
+  {{else}}
+  <div class="no-data">No browser data found for this user.</div>
+  {{end}}
+</div>
+{{end}}
+
+{{else}}
+<div class="no-data" style="padding: 40px; font-size: 16px;">No browser data found on this system.</div>
+{{end}}
+
+{{if .Warnings}}
+<div class="warnings-section">
+  <div class="warnings-header" onclick="toggleWarnings(this)">
+    <h2>⚠ Warnings ({{len .Warnings}})</h2>
+    <span class="toggle-icon">▼</span>
+  </div>
+  <div class="warnings-body" id="warningsBody">
+    <ul>
+      {{range .Warnings}}<li>{{.}}</li>{{end}}
+    </ul>
+  </div>
+</div>
+{{end}}
+
+<script>
+function showTab(idx) {
+  document.querySelectorAll('.tab-btn').forEach(function(b, i) {
+    b.classList.toggle('active', i === idx);
+  });
+  document.querySelectorAll('.tab-panel').forEach(function(p, i) {
+    p.classList.toggle('active', i === idx);
+  });
+}
+
+function toggleSection(header) {
+  header.classList.toggle('collapsed');
+  var body = header.nextElementSibling;
+  body.classList.toggle('collapsed');
+}
+
+function toggleWarnings(header) {
+  header.classList.toggle('collapsed');
+  document.getElementById('warningsBody').classList.toggle('collapsed');
+}
+
+function filterTable(input, tableId) {
+  var filter = input.value.toLowerCase();
+  var tbody = document.getElementById(tableId).querySelector('tbody');
+  tbody.querySelectorAll('tr').forEach(function(row) {
+    var text = row.textContent.toLowerCase();
+    row.style.display = text.includes(filter) ? '' : 'none';
+  });
+}
+
+function sortTable(th, tableId, colIdx) {
+  var table = document.getElementById(tableId);
+  var tbody = table.querySelector('tbody');
+  var rows = Array.from(tbody.querySelectorAll('tr'));
+  var asc = th.classList.contains('sort-asc');
+
+  table.querySelectorAll('th').forEach(function(h) {
+    h.classList.remove('sort-asc', 'sort-desc');
+  });
+
+  rows.sort(function(a, b) {
+    var av = a.cells[colIdx] ? a.cells[colIdx].textContent.trim() : '';
+    var bv = b.cells[colIdx] ? b.cells[colIdx].textContent.trim() : '';
+    var na = parseFloat(av), nb = parseFloat(bv);
+    if (!isNaN(na) && !isNaN(nb)) {
+      return asc ? nb - na : na - nb;
+    }
+    return asc ? bv.localeCompare(av) : av.localeCompare(bv);
+  });
+
+  rows.forEach(function(r) { tbody.appendChild(r); });
+  th.classList.add(asc ? 'sort-desc' : 'sort-asc');
+}
+</script>
+</body>
+</html>

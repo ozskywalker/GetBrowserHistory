@@ -1,0 +1,1 @@
+go build -o browser-report.exe ./cmd/browser-report/
