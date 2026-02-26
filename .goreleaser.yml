@@ -17,12 +17,9 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X '{{ .ModulePath }}/internal/version.Version={{.Version}}'
-      - -X '{{ .ModulePath }}/internal/version.GitCommit={{.FullCommit}}'
-      - -X '{{ .ModulePath }}/internal/version.BuildDate={{.Date}}'
-      - -X '{{ .ModulePath }}/internal/version.GitTag={{.Tag}}'
+      - -X 'main.version={{.Version}}'
     binary: '{{ .ProjectName }}'
-    main: ./cmd/ntfy-to-slack
+    main: ./cmd/browser-report
 
 archives:
   - format: tar.gz
