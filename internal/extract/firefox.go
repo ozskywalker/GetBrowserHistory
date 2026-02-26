@@ -29,7 +29,7 @@ func ExtractFirefoxHistory(profilePath string, maxRows int) ([]HistoryRecord, er
 	if err != nil {
 		return nil, fmt.Errorf("copy places.sqlite: %w", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	query := `
 		SELECT p.url, COALESCE(p.title,'') AS title,
@@ -73,7 +73,7 @@ func ExtractFirefoxDownloads(profilePath string) ([]DownloadRecord, error) {
 	if err != nil {
 		return nil, fmt.Errorf("copy places.sqlite: %w", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// The moz_annos table stores download metadata as annotations on places.
 	// The content column for downloads/destinationFileURI holds the local path.

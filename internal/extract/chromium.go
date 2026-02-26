@@ -28,14 +28,14 @@ func WebKitEpochToTime(microseconds int64) time.Time {
 func ExtractChromiumHistory(profilePath string, maxRows int) ([]HistoryRecord, error) {
 	dbPath := filepath.Join(profilePath, "History")
 	if _, err := os.Stat(dbPath); err != nil {
-		return nil, fmt.Errorf("History db not found: %w", err)
+		return nil, fmt.Errorf("history db not found: %w", err)
 	}
 
 	tempDir, dbCopy, err := CopyDatabase(dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("copy History db: %w", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	query := `
 		SELECT u.url, COALESCE(u.title,'') AS title, u.visit_count, v.visit_time
@@ -71,14 +71,14 @@ func ExtractChromiumHistory(profilePath string, maxRows int) ([]HistoryRecord, e
 func ExtractChromiumDownloads(profilePath string) ([]DownloadRecord, error) {
 	dbPath := filepath.Join(profilePath, "History")
 	if _, err := os.Stat(dbPath); err != nil {
-		return nil, fmt.Errorf("History db not found: %w", err)
+		return nil, fmt.Errorf("history db not found: %w", err)
 	}
 
 	tempDir, dbCopy, err := CopyDatabase(dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("copy History db: %w", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	query := `
 		SELECT d.target_path, COALESCE(c.url,'') AS source_url, d.start_time,

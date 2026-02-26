@@ -19,7 +19,7 @@ func TestCopyDatabase(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		got, err := os.ReadFile(destPath)
 		if err != nil {
@@ -40,7 +40,7 @@ func TestCopyDatabase(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		if filepath.Base(destPath) != "places.sqlite" {
 			t.Errorf("expected dest filename 'places.sqlite', got %q", filepath.Base(destPath))
@@ -64,7 +64,7 @@ func TestCopyDatabase(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 
 		copiedWAL := destPath + "-wal"
 		got, err := os.ReadFile(copiedWAL)
@@ -87,7 +87,7 @@ func TestCopyDatabase(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error when sidecars absent, got: %v", err)
 		}
-		defer os.RemoveAll(tempDir)
+		defer func() { _ = os.RemoveAll(tempDir) }()
 	})
 
 	t.Run("non-existent source returns error and does not leak temp dir", func(t *testing.T) {
@@ -98,7 +98,7 @@ func TestCopyDatabase(t *testing.T) {
 			t.Error("expected error for non-existent source, got nil")
 			// Clean up just in case.
 			if tempDir != "" {
-				os.RemoveAll(tempDir)
+				_ = os.RemoveAll(tempDir)
 			}
 			return
 		}

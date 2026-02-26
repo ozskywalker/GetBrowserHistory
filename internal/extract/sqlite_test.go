@@ -17,7 +17,7 @@ func seedDB(t *testing.T, dbPath, ddl, dml string) string {
 	if err != nil {
 		t.Fatalf("seed: open: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	if _, err := db.Exec(ddl); err != nil {
 		t.Fatalf("seed: ddl: %v", err)
 	}

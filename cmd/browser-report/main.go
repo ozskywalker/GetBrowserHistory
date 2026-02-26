@@ -21,7 +21,7 @@ var warnings []string
 
 func logProgress(format string, args ...any) {
 	ts := time.Now().UTC().Format("2006-01-02 15:04:05")
-	fmt.Fprintf(os.Stdout, "[%s UTC] %s\n", ts, fmt.Sprintf(format, args...))
+	fmt.Printf("[%s UTC] %s\n", ts, fmt.Sprintf(format, args...))
 }
 
 func logWarn(format string, args ...any) {
@@ -212,14 +212,14 @@ func main() {
 	}
 
 	// Final summary.
-	fmt.Fprintf(os.Stdout, "\n=== Report Complete ===\n")
-	fmt.Fprintf(os.Stdout, "Output:     %s\n", outputDir)
-	fmt.Fprintf(os.Stdout, "Users:      %d\n", len(userNames))
-	fmt.Fprintf(os.Stdout, "History:    %d rows\n", totalHistory)
-	fmt.Fprintf(os.Stdout, "Downloads:  %d rows\n", totalDownloads)
-	fmt.Fprintf(os.Stdout, "Warnings:   %d\n", len(warnings))
-	fmt.Fprintf(os.Stdout, "HTML:       %s\n", htmlPath)
-	fmt.Fprintf(os.Stdout, "JSON:       %s\n", jsonPath)
+	fmt.Printf("\n=== Report Complete ===\n")
+	fmt.Printf("Output:     %s\n", outputDir)
+	fmt.Printf("Users:      %d\n", len(userNames))
+	fmt.Printf("History:    %d rows\n", totalHistory)
+	fmt.Printf("Downloads:  %d rows\n", totalDownloads)
+	fmt.Printf("Warnings:   %d\n", len(warnings))
+	fmt.Printf("HTML:       %s\n", htmlPath)
+	fmt.Printf("JSON:       %s\n", jsonPath)
 
 	os.Exit(0)
 }
@@ -240,8 +240,8 @@ func createOutputDir(basePath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("output directory not writable: %w", err)
 	}
-	f.Close()
-	os.Remove(testFile)
+	_ = f.Close()
+	_ = os.Remove(testFile)
 	return basePath, nil
 }
 

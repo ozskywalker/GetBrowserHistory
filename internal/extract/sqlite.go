@@ -15,13 +15,13 @@ func QueryDB(dbPath, query string, args ...any) ([]map[string]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open db %q: %w", dbPath, err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("query: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	cols, err := rows.Columns()
 	if err != nil {
