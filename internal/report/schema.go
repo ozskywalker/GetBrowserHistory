@@ -16,8 +16,8 @@ type ReportMeta struct {
 
 // ProfileData holds extracted data for a single browser profile.
 type ProfileData struct {
-	BrowserName string                 `json:"browserName"`
-	ProfilePath string                 `json:"profilePath"`
+	BrowserName string                   `json:"browserName"`
+	ProfilePath string                   `json:"profilePath"`
 	History     []extract.HistoryRecord  `json:"history"`
 	Downloads   []extract.DownloadRecord `json:"downloads"`
 	// Truncated is true when history results were capped by --max-rows.

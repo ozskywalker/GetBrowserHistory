@@ -4,10 +4,10 @@ import "testing"
 
 func TestExtractSearchQuery(t *testing.T) {
 	tests := []struct {
-		name        string
-		url         string
-		wantQuery   string
-		wantEngine  string
+		name       string
+		url        string
+		wantQuery  string
+		wantEngine string
 	}{
 		{
 			name:       "Google search",
