@@ -12,6 +12,10 @@
   header .meta { font-size: 12px; color: #94a3b8; display: flex; flex-wrap: wrap; gap: 16px; }
   header .meta span { white-space: nowrap; }
 
+  .controls-bar { background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 8px 24px; display: flex; align-items: center; gap: 16px; }
+  .tz-toggle-label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #475569; cursor: pointer; user-select: none; }
+  .tz-toggle-label input[type="checkbox"] { cursor: pointer; }
+
   .tab-bar { display: flex; flex-wrap: wrap; gap: 2px; background: #334155; padding: 8px 16px 0; }
   .tab-btn { padding: 8px 16px; border: none; border-radius: 4px 4px 0 0; background: #475569; color: #cbd5e1; cursor: pointer; font-size: 13px; font-weight: 500; }
   .tab-btn:hover { background: #64748b; color: #f1f5f9; }
@@ -31,9 +35,11 @@
   .data-section { margin-bottom: 20px; }
   .data-section h3 { font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
 
-  .filter-bar { margin-bottom: 8px; }
+  .filter-bar { margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 8px; }
   .filter-bar input { width: 100%; max-width: 400px; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; }
   .filter-bar input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.2); }
+  .filter-bar input.filter-out { border-color: #fca5a5; }
+  .filter-bar input.filter-out:focus { border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,0.2); }
 
   .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -45,6 +51,7 @@
   tr:hover td { background: #f8fafc; }
   td a { color: #3b82f6; text-decoration: none; }
   td a:hover { text-decoration: underline; }
+  .ts-cell { cursor: default; }
 
   .truncation-notice { padding: 8px 12px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 4px; color: #92400e; font-size: 12px; margin-bottom: 8px; }
   .empty-notice { padding: 12px; color: #94a3b8; font-style: italic; font-size: 13px; }
@@ -71,6 +78,13 @@
   </div>
 </header>
 
+<div class="controls-bar">
+  <label class="tz-toggle-label">
+    <input type="checkbox" id="localTimeToggle" checked onchange="updateTimestamps()">
+    Show in local time
+  </label>
+</div>
+
 {{if .Users}}
 <div class="tab-bar" id="tabBar">
   {{range $i, $u := .Users}}
@@ -96,7 +110,7 @@
           <div class="table-wrap">
             <table id="sh-{{$i}}-{{$j}}">
               <thead><tr>
-                <th onclick="sortTable(this, 'sh-{{$i}}-{{$j}}', 0)">Timestamp (UTC)</th>
+                <th onclick="sortTable(this, 'sh-{{$i}}-{{$j}}', 0)">Timestamp</th>
                 <th onclick="sortTable(this, 'sh-{{$i}}-{{$j}}', 1)">Engine</th>
                 <th onclick="sortTable(this, 'sh-{{$i}}-{{$j}}', 2)">Query</th>
                 <th onclick="sortTable(this, 'sh-{{$i}}-{{$j}}', 3)">URL</th>
@@ -104,7 +118,7 @@
               <tbody>
                 {{range $searches}}
                 <tr>
-                  <td>{{.LastVisitUTC.UTC.Format "2006-01-02 15:04:05"}}</td>
+                  <td class="ts-cell" data-utc="{{.LastVisitUTC.UTC.Format "2006-01-02T15:04:05"}}">{{.LastVisitUTC.UTC.Format "2006-01-02 15:04:05"}}</td>
                   <td>{{.SearchEngine}}</td>
                   <td>{{.SearchQuery}}</td>
                   <td><a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.URL}}</a></td>
@@ -119,14 +133,17 @@
         <div class="data-section">
           <h3>History {{if $p.Truncated}}(showing {{$p.TruncatedAt}} most recent){{else}}({{len $p.History}} rows){{end}}</h3>
           {{if $p.Truncated}}
-          <div class="truncation-notice">⚠ Results capped at {{$p.TruncatedAt}} rows. Use --max-rows to increase the limit.</div>
+          <div class="truncation-notice">&#x26A0; Results capped at {{$p.TruncatedAt}} rows. Use --max-rows to increase the limit.</div>
           {{end}}
           {{if $p.History}}
-          <div class="filter-bar"><input type="text" placeholder="Filter URL or title…" oninput="filterTable(this, 'ht-{{$i}}-{{$j}}')"></div>
+          <div class="filter-bar">
+            <input type="text" id="fi-ht-{{$i}}-{{$j}}" placeholder="Filter URL or title…" oninput="applyHistoryFilters('ht-{{$i}}-{{$j}}')">
+            <input type="text" class="filter-out" id="fo-ht-{{$i}}-{{$j}}" placeholder="Filter OUT URL or title…" oninput="applyHistoryFilters('ht-{{$i}}-{{$j}}')">
+          </div>
           <div class="table-wrap">
             <table id="ht-{{$i}}-{{$j}}">
               <thead><tr>
-                <th onclick="sortTable(this, 'ht-{{$i}}-{{$j}}', 0)">Timestamp (UTC)</th>
+                <th onclick="sortTable(this, 'ht-{{$i}}-{{$j}}', 0)">Timestamp</th>
                 <th onclick="sortTable(this, 'ht-{{$i}}-{{$j}}', 1)">URL</th>
                 <th onclick="sortTable(this, 'ht-{{$i}}-{{$j}}', 2)">Title</th>
                 <th onclick="sortTable(this, 'ht-{{$i}}-{{$j}}', 3)">Visits</th>
@@ -135,7 +152,7 @@
               <tbody>
                 {{range $p.History}}
                 <tr>
-                  <td>{{.LastVisitUTC.UTC.Format "2006-01-02 15:04:05"}}</td>
+                  <td class="ts-cell" data-utc="{{.LastVisitUTC.UTC.Format "2006-01-02T15:04:05"}}">{{.LastVisitUTC.UTC.Format "2006-01-02 15:04:05"}}</td>
                   <td><a href="{{.URL}}" target="_blank" rel="noopener noreferrer">{{.URL}}</a></td>
                   <td>{{.Title}}</td>
                   <td>{{.VisitCount}}</td>
@@ -157,7 +174,7 @@
           <div class="table-wrap">
             <table id="dt-{{$i}}-{{$j}}">
               <thead><tr>
-                <th onclick="sortTable(this, 'dt-{{$i}}-{{$j}}', 0)">Timestamp (UTC)</th>
+                <th onclick="sortTable(this, 'dt-{{$i}}-{{$j}}', 0)">Timestamp</th>
                 <th onclick="sortTable(this, 'dt-{{$i}}-{{$j}}', 1)">File Path</th>
                 <th onclick="sortTable(this, 'dt-{{$i}}-{{$j}}', 2)">Source URL</th>
                 <th onclick="sortTable(this, 'dt-{{$i}}-{{$j}}', 3)">Bytes</th>
@@ -165,7 +182,7 @@
               <tbody>
                 {{range $p.Downloads}}
                 <tr>
-                  <td>{{.StartTimeUTC.UTC.Format "2006-01-02 15:04:05"}}</td>
+                  <td class="ts-cell" data-utc="{{.StartTimeUTC.UTC.Format "2006-01-02T15:04:05"}}">{{.StartTimeUTC.UTC.Format "2006-01-02 15:04:05"}}</td>
                   <td>{{.TargetPath}}</td>
                   <td><a href="{{.SourceURL}}" target="_blank" rel="noopener noreferrer">{{.SourceURL}}</a></td>
                   <td>{{.TotalBytes}}</td>
@@ -195,7 +212,7 @@
 {{if .Warnings}}
 <div class="warnings-section">
   <div class="warnings-header" onclick="toggleWarnings(this)">
-    <h2>⚠ Warnings ({{len .Warnings}})</h2>
+    <h2>&#x26A0; Warnings ({{len .Warnings}})</h2>
     <span class="toggle-icon">▼</span>
   </div>
   <div class="warnings-body" id="warningsBody">
@@ -207,6 +224,34 @@
 {{end}}
 
 <script>
+function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+function fmtLocal(date) {
+  return date.getFullYear() + '-' + pad(date.getMonth()+1) + '-' + pad(date.getDate()) + ' ' +
+         pad(date.getHours()) + ':' + pad(date.getMinutes()) + ':' + pad(date.getSeconds());
+}
+
+function fmtUTC(date) {
+  return date.getUTCFullYear() + '-' + pad(date.getUTCMonth()+1) + '-' + pad(date.getUTCDate()) + ' ' +
+         pad(date.getUTCHours()) + ':' + pad(date.getUTCMinutes()) + ':' + pad(date.getUTCSeconds());
+}
+
+function updateTimestamps() {
+  var showLocal = document.getElementById('localTimeToggle').checked;
+  document.querySelectorAll('.ts-cell').forEach(function(td) {
+    var utcStr = td.dataset.utc;
+    if (!utcStr) return;
+    var date = new Date(utcStr + 'Z');
+    if (showLocal) {
+      td.textContent = fmtLocal(date);
+      td.title = fmtUTC(date) + ' UTC';
+    } else {
+      td.textContent = fmtUTC(date) + ' UTC';
+      td.title = 'Local: ' + fmtLocal(date);
+    }
+  });
+}
+
 function showTab(idx) {
   document.querySelectorAll('.tab-btn').forEach(function(b, i) {
     b.classList.toggle('active', i === idx);
@@ -236,6 +281,21 @@ function filterTable(input, tableId) {
   });
 }
 
+function applyHistoryFilters(tableId) {
+  var fiEl = document.getElementById('fi-' + tableId);
+  var foEl = document.getElementById('fo-' + tableId);
+  var inVal = fiEl ? fiEl.value.toLowerCase() : '';
+  var outVal = foEl ? foEl.value.toLowerCase() : '';
+  var tbody = document.getElementById(tableId).querySelector('tbody');
+  tbody.querySelectorAll('tr').forEach(function(row) {
+    var text = row.textContent.toLowerCase();
+    var show = true;
+    if (inVal && !text.includes(inVal)) show = false;
+    if (outVal && text.includes(outVal)) show = false;
+    row.style.display = show ? '' : 'none';
+  });
+}
+
 function sortTable(th, tableId, colIdx) {
   var table = document.getElementById(tableId);
   var tbody = table.querySelector('tbody');
@@ -247,8 +307,8 @@ function sortTable(th, tableId, colIdx) {
   });
 
   rows.sort(function(a, b) {
-    var av = a.cells[colIdx] ? a.cells[colIdx].textContent.trim() : '';
-    var bv = b.cells[colIdx] ? b.cells[colIdx].textContent.trim() : '';
+    var av = a.cells[colIdx] ? a.cells[colIdx].dataset.utc || a.cells[colIdx].textContent.trim() : '';
+    var bv = b.cells[colIdx] ? b.cells[colIdx].dataset.utc || b.cells[colIdx].textContent.trim() : '';
     var na = parseFloat(av), nb = parseFloat(bv);
     if (!isNaN(na) && !isNaN(nb)) {
       return asc ? nb - na : na - nb;
@@ -259,6 +319,8 @@ function sortTable(th, tableId, colIdx) {
   rows.forEach(function(r) { tbody.appendChild(r); });
   th.classList.add(asc ? 'sort-desc' : 'sort-asc');
 }
+
+updateTimestamps();
 </script>
 </body>
 </html>
