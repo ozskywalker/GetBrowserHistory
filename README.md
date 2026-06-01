@@ -19,18 +19,20 @@ Useful for forensic review, parental oversight, or auditing browser activity on 
 - **Safe to run while browsers are open** — copies locked SQLite databases before reading
 - **Self-contained output** — single `.html` file with all CSS and JS inline; no internet connection needed to view
 - **JSON output** — machine-readable `report.json` alongside the HTML for scripting or further analysis
-- **Sortable & filterable tables** — click column headers to sort; type to filter rows
+- **Sortable & filterable tables** — click column headers to sort; type to filter rows in or out
+- **Local time display** — timestamps shown in the viewer's local timezone by default, with a toggle to switch to UTC; hovering any timestamp shows the opposite zone
+- **Re-render from JSON** — generate a fresh HTML report from an existing `report.json` without re-running collection
 
 ## Usage
 
 ```
-browser-report.exe [flags]
+GetBrowserHistory.exe [flags]
 ```
 
 Run with no flags to extract data for all users and all browsers:
 
 ```
-browser-report.exe
+GetBrowserHistory.exe
 ```
 
 ### Flags
@@ -41,22 +43,29 @@ browser-report.exe
 | `--output <path>` | `C:\Windows\Temp\BrowserReport_<timestamp>\` | Directory to write report files |
 | `--max-rows <n>` | `10000` | Maximum history rows per browser profile |
 | `--no-downloads` | off | Skip download history extraction |
+| `--from-json <path>` | | Load an existing `report.json` and generate `BrowserReport.html` from it — skips all collection |
 | `--version` | | Print version and exit |
 
 ### Examples
 
 ```
 # All users, default output location
-browser-report.exe
+GetBrowserHistory.exe
 
 # Single user
-browser-report.exe --user alice
+GetBrowserHistory.exe --user alice
 
 # Custom output directory, row limit
-browser-report.exe --output C:\Reports --max-rows 5000
+GetBrowserHistory.exe --output C:\Reports --max-rows 5000
 
 # History only, no downloads
-browser-report.exe --no-downloads
+GetBrowserHistory.exe --no-downloads
+
+# Re-render HTML from a previously collected report.json
+GetBrowserHistory.exe --from-json C:\Reports\report.json
+
+# Re-render to a specific output directory
+GetBrowserHistory.exe --from-json report.json --output C:\NewReports
 ```
 
 ## Output
@@ -71,8 +80,10 @@ Two files are written to the output directory:
 The HTML report is organised by Windows user → browser → profile. Each profile section contains:
 
 1. **Search History** — queries extracted from search engine visits (shown only when searches exist)
-2. **History** — all visited URLs, including a Search Query column
-3. **Downloads** — downloaded files (unless `-no-downloads` was passed)
+2. **History** — all visited URLs, including a Search Query column and filter-in / filter-out inputs
+3. **Downloads** — downloaded files (unless `--no-downloads` was passed)
+
+Timestamps default to the viewer's local timezone. Use the **Show in local time** toggle at the top of the page to switch between local time and UTC. Hovering over any timestamp shows the opposite.
 
 ## Supported Browsers
 
@@ -93,15 +104,21 @@ Search queries are extracted from URLs belonging to: Google (all country domains
 Requires [Go 1.24+](https://go.dev/dl/).
 
 ```
-git clone https://github.com/GetBrowserHistory/GetBrowserHistory.git
+git clone https://github.com/ozskywalker/GetBrowserHistory.git
 cd GetBrowserHistory
-go build -o browser-report.exe ./cmd/browser-report/
+go build -o GetBrowserHistory.exe ./cmd/browser-report/
+```
+
+Or use the included build script:
+
+```
+.\build.ps1
 ```
 
 To embed a version string:
 
 ```
-go build -ldflags "-X main.version=1.0.0" -o browser-report.exe ./cmd/browser-report/
+go build -ldflags "-X main.version=1.0.0" -o GetBrowserHistory.exe ./cmd/browser-report/
 ```
 
 ## Requirements
