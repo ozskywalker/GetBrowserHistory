@@ -1,1 +1,1 @@
-go build -o browser-report.exe ./cmd/browser-report/
+go build -o GetBrowserHistory.exe ./cmd/browser-report/
