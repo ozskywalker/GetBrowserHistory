@@ -41,6 +41,7 @@ func main() {
 		flagOutput      = flag.String("output", "", "Directory to write report files. Default: C:\\Windows\\Temp\\BrowserReport_<timestamp>\\")
 		flagMaxRows     = flag.Int("max-rows", 10000, "Maximum history rows to retrieve per browser profile.")
 		flagNoDownloads = flag.Bool("no-downloads", false, "Skip download history extraction.")
+		flagFromJSON    = flag.String("from-json", "", "Path to an existing report.json. Skips collection and generates BrowserReport.html from the JSON.")
 		flagVersion     = flag.Bool("version", false, "Print version and exit.")
 	)
 
@@ -61,6 +62,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  browser-report.exe --user alice\n")
 		fmt.Fprintf(os.Stderr, "  browser-report.exe --output C:\\Reports --max-rows 5000\n")
 		fmt.Fprintf(os.Stderr, "  browser-report.exe --no-downloads\n")
+		fmt.Fprintf(os.Stderr, "  browser-report.exe --from-json C:\\Reports\\report.json\n")
+		fmt.Fprintf(os.Stderr, "  browser-report.exe --from-json report.json --output C:\\Reports\n")
 	}
 
 	flag.Parse()
@@ -68,6 +71,11 @@ func main() {
 	if *flagVersion {
 		fmt.Println(version)
 		os.Exit(0)
+	}
+
+	if *flagFromJSON != "" {
+		renderFromJSON(*flagFromJSON, *flagOutput)
+		return
 	}
 
 	// Determine output directory.
@@ -222,6 +230,35 @@ func main() {
 	fmt.Printf("JSON:       %s\n", jsonPath)
 
 	os.Exit(0)
+}
+
+// renderFromJSON loads an existing report.json, renders HTML, and writes it to outputDir.
+func renderFromJSON(jsonPath, outputFlag string) {
+	logProgress("Loading report from: %s", jsonPath)
+
+	rpt, err := report.LoadJSON(jsonPath)
+	if err != nil {
+		fatal("failed to load JSON: %v", err)
+	}
+
+	outputDir, err := createOutputDir(outputFlag)
+	if err != nil {
+		fatal("cannot create output directory: %v", err)
+	}
+	logProgress("Output directory: %s", outputDir)
+
+	htmlBytes, err := report.RenderHTML(rpt)
+	if err != nil {
+		fatal("failed to render HTML report: %v", err)
+	}
+	htmlPath := filepath.Join(outputDir, "BrowserReport.html")
+	if err := os.WriteFile(htmlPath, htmlBytes, 0644); err != nil {
+		fatal("failed to write HTML report: %v", err)
+	}
+
+	fmt.Printf("\n=== HTML Report Generated ===\n")
+	fmt.Printf("Source JSON: %s\n", jsonPath)
+	fmt.Printf("HTML:        %s\n", htmlPath)
 }
 
 // createOutputDir creates and returns the output directory path.

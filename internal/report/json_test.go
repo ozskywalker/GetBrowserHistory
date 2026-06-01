@@ -2,6 +2,8 @@ package report
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -169,6 +171,87 @@ func TestRenderJSON(t *testing.T) {
 		b, _ = RenderJSON(Report{Warnings: []string{"something went wrong"}})
 		if !strings.Contains(string(b), `"something went wrong"`) {
 			t.Error("expected warning message in output")
+		}
+	})
+}
+
+func TestLoadJSON(t *testing.T) {
+	t.Run("round-trips through RenderJSON", func(t *testing.T) {
+		ts := time.Date(2024, 6, 15, 12, 0, 0, 0, time.UTC)
+		original := Report{
+			Meta: ReportMeta{
+				GeneratedAt:      ts,
+				Hostname:         "test-host",
+				ExecutingAccount: "alice",
+				Version:          "1.0.0",
+			},
+			Users: []UserData{
+				{
+					Username: "alice",
+					Profiles: []ProfileData{
+						{
+							BrowserName: "Chrome",
+							ProfilePath: `C:\Users\alice\AppData\Local\Google\Chrome\User Data\Default`,
+							History: []extract.HistoryRecord{
+								{URL: "https://example.com", Title: "Example", VisitCount: 1, LastVisitUTC: ts},
+							},
+						},
+					},
+				},
+			},
+			Warnings: []string{"a warning"},
+		}
+
+		b, err := RenderJSON(original)
+		if err != nil {
+			t.Fatalf("RenderJSON: %v", err)
+		}
+
+		tmp := filepath.Join(t.TempDir(), "report.json")
+		if err := os.WriteFile(tmp, b, 0644); err != nil {
+			t.Fatalf("WriteFile: %v", err)
+		}
+
+		loaded, err := LoadJSON(tmp)
+		if err != nil {
+			t.Fatalf("LoadJSON: %v", err)
+		}
+
+		if loaded.Meta.Hostname != original.Meta.Hostname {
+			t.Errorf("hostname: got %q, want %q", loaded.Meta.Hostname, original.Meta.Hostname)
+		}
+		if loaded.Meta.Version != original.Meta.Version {
+			t.Errorf("version: got %q, want %q", loaded.Meta.Version, original.Meta.Version)
+		}
+		if !loaded.Meta.GeneratedAt.Equal(original.Meta.GeneratedAt) {
+			t.Errorf("generatedAt: got %v, want %v", loaded.Meta.GeneratedAt, original.Meta.GeneratedAt)
+		}
+		if len(loaded.Users) != 1 || loaded.Users[0].Username != "alice" {
+			t.Errorf("unexpected users: %+v", loaded.Users)
+		}
+		if len(loaded.Users[0].Profiles[0].History) != 1 {
+			t.Error("expected 1 history record")
+		}
+		if len(loaded.Warnings) != 1 || loaded.Warnings[0] != "a warning" {
+			t.Errorf("unexpected warnings: %v", loaded.Warnings)
+		}
+	})
+
+	t.Run("error on missing file", func(t *testing.T) {
+		_, err := LoadJSON(filepath.Join(t.TempDir(), "nonexistent.json"))
+		if err == nil {
+			t.Error("expected error for missing file")
+		}
+	})
+
+	t.Run("error on invalid JSON", func(t *testing.T) {
+		tmp := filepath.Join(t.TempDir(), "bad.json")
+		if err := os.WriteFile(tmp, []byte(`{not valid json`), 0644); err != nil {
+			t.Fatalf("WriteFile: %v", err)
+		}
+		_, err := LoadJSON(tmp)
+		if err == nil {
+			t.Error("expected error for invalid JSON")
 		}
 	})
 }
