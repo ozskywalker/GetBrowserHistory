@@ -1,4 +1,4 @@
-version: 1
+version: 2
 
 before:
   hooks:
@@ -22,10 +22,10 @@ builds:
     main: ./cmd/browser-report
 
 archives:
-  - format: tar.gz
+  - formats: ["tar.gz"]
     format_overrides:
       - goos: windows
-        format: zip
+        formats: ["zip"]
     name_template: >-
       {{ .ProjectName }}-
       {{- title .Os }}-
@@ -41,7 +41,7 @@ checksum:
   name_template: 'checksums.txt'
 
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 
 changelog:
   sort: asc
@@ -76,7 +76,6 @@ changelog:
 
 release:
   draft: true
-  replace_existing_draft: true
   prerelease: auto
   mode: replace
   header: |
