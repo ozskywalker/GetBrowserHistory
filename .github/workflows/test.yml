@@ -26,14 +26,6 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
-      - name: Cache dependencies
-        uses: actions/cache@v6
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
-
       - name: Download dependencies
         run: go mod download
 
