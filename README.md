@@ -4,7 +4,7 @@ Builds a self-contained HTML (and JSON) report of pages visited, search terms us
 
 Useful for forensic review, parental oversight, or auditing browser activity on a Windows system. Runs as a single `.exe` with no installation required.
 
-[![Go Version](https://img.shields.io/badge/Go-1.25.0-blue.svg)](https://golang.org/doc/devel/release.html)
+[![Go Version](https://img.shields.io/badge/Go-1.26.6-blue.svg)](https://golang.org/doc/devel/release.html)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Designed with OpenSpec](https://img.shields.io/badge/Designed%20with-OpenSpec-007ACC?logo=openlogo&logoColor=white)](https://github.com/Fission-AI/OpenSpec)
 ![Claude Used](https://img.shields.io/badge/Built%20with-Claude-4B5AEA)
@@ -103,7 +103,7 @@ Search queries are extracted from URLs belonging to: Google (all country domains
 
 ## Building from Source
 
-Requires [Go 1.25+](https://go.dev/dl/).
+Requires [Go 1.26+](https://go.dev/dl/).
 
 ```
 git clone https://github.com/ozskywalker/GetBrowserHistory.git

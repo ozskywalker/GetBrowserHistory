@@ -1,6 +1,6 @@
 module github.com/ozskywalker/GetBrowserHistory
 
-go 1.25.0
+go 1.26.6
 
 require modernc.org/sqlite v1.52.0
 
