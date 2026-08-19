@@ -38,7 +38,9 @@ type BrowserDef struct {
 
 // DefaultBrowsers is the registry of supported browsers. To add a new
 // Chromium-based browser, append a BrowserDef with Type: BrowserChromium and
-// the appropriate RelativePath under AppData\Local.
+// the appropriate RelativePath. Most Chromium browsers (Chrome, Edge, Brave,
+// DuckDuckGo) store profiles under AppData\Local; Opera and Opera GX instead
+// store them under AppData\Roaming, so set AppDataBase accordingly.
 var DefaultBrowsers = []BrowserDef{
 	{
 		Name:         "Chrome",
@@ -62,6 +64,18 @@ var DefaultBrowsers = []BrowserDef{
 		Name:         "DuckDuckGo",
 		RelativePath: `DuckDuckGo\Browser\User Data`,
 		AppDataBase:  AppDataLocal,
+		Type:         BrowserChromium,
+	},
+	{
+		Name:         "Opera",
+		RelativePath: `Opera Software\Opera Stable`,
+		AppDataBase:  AppDataRoaming,
+		Type:         BrowserChromium,
+	},
+	{
+		Name:         "Opera GX",
+		RelativePath: `Opera Software\Opera GX Stable`,
+		AppDataBase:  AppDataRoaming,
 		Type:         BrowserChromium,
 	},
 	{

@@ -134,4 +134,113 @@ func TestFindProfiles(t *testing.T) {
 			t.Fatalf("expected 1 profile, got %d: %v", len(profiles), profiles)
 		}
 	})
+
+	t.Run("opera: roaming chromium profile with History found", func(t *testing.T) {
+		// Opera stores its profile under AppData\Roaming (unlike Chrome/Edge/Brave)
+		// with the History DB nested under a per-profile subdirectory, e.g.
+		// ...\Opera Stable\Default\History.
+		operaDef := BrowserDef{
+			Name:         "Opera",
+			RelativePath: filepath.Join("Opera Software", "Opera Stable"),
+			AppDataBase:  AppDataRoaming,
+			Type:         BrowserChromium,
+		}
+
+		base := t.TempDir() // simulates the Roaming AppData root
+		mkProfile(t, base, operaDef.RelativePath, "Default", "History")
+
+		profiles, err := FindProfiles(base, operaDef)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(profiles) != 1 {
+			t.Fatalf("expected 1 profile, got %d: %v", len(profiles), profiles)
+		}
+		if filepath.Base(profiles[0]) != "Default" {
+			t.Errorf("expected profile named 'Default', got %q", filepath.Base(profiles[0]))
+		}
+	})
+
+	t.Run("opera gx: roaming chromium profile with History found", func(t *testing.T) {
+		operaGxDef := BrowserDef{
+			Name:         "Opera GX",
+			RelativePath: filepath.Join("Opera Software", "Opera GX Stable"),
+			AppDataBase:  AppDataRoaming,
+			Type:         BrowserChromium,
+		}
+
+		base := t.TempDir()
+		mkProfile(t, base, operaGxDef.RelativePath, "Default", "History")
+
+		profiles, err := FindProfiles(base, operaGxDef)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(profiles) != 1 {
+			t.Fatalf("expected 1 profile, got %d: %v", len(profiles), profiles)
+		}
+		if filepath.Base(profiles[0]) != "Default" {
+			t.Errorf("expected profile named 'Default', got %q", filepath.Base(profiles[0]))
+		}
+	})
+
+	t.Run("opera: not installed returns empty slice without error", func(t *testing.T) {
+		operaDef := BrowserDef{
+			Name:         "Opera",
+			RelativePath: filepath.Join("Opera Software", "Opera Stable"),
+			AppDataBase:  AppDataRoaming,
+			Type:         BrowserChromium,
+		}
+
+		base := t.TempDir()
+		profiles, err := FindProfiles(base, operaDef)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(profiles) != 0 {
+			t.Errorf("expected empty slice, got %v", profiles)
+		}
+	})
+}
+
+// TestDefaultBrowsersOperaRegistry asserts that the Opera and Opera GX entries
+// in DefaultBrowsers carry the correct fields: Chromium engine type, profile
+// under Roaming AppData (Opera's unique behaviour vs other Chromium browsers),
+// and the expected RelativePath.
+func TestDefaultBrowsersOperaRegistry(t *testing.T) {
+	var opera, operaGX *BrowserDef
+	for i := range DefaultBrowsers {
+		switch DefaultBrowsers[i].Name {
+		case "Opera":
+			opera = &DefaultBrowsers[i]
+		case "Opera GX":
+			operaGX = &DefaultBrowsers[i]
+		}
+	}
+
+	if opera == nil {
+		t.Fatal("expected an 'Opera' entry in DefaultBrowsers")
+	}
+	if opera.AppDataBase != AppDataRoaming {
+		t.Errorf("Opera AppDataBase = %q, want %q (Opera uses Roaming, not Local)", opera.AppDataBase, AppDataRoaming)
+	}
+	if opera.Type != BrowserChromium {
+		t.Errorf("Opera Type = %q, want %q", opera.Type, BrowserChromium)
+	}
+	if want := "Opera Software\\Opera Stable"; opera.RelativePath != want {
+		t.Errorf("Opera RelativePath = %q, want %q", opera.RelativePath, want)
+	}
+
+	if operaGX == nil {
+		t.Fatal("expected an 'Opera GX' entry in DefaultBrowsers")
+	}
+	if operaGX.AppDataBase != AppDataRoaming {
+		t.Errorf("Opera GX AppDataBase = %q, want %q (Opera GX uses Roaming, not Local)", operaGX.AppDataBase, AppDataRoaming)
+	}
+	if operaGX.Type != BrowserChromium {
+		t.Errorf("Opera GX Type = %q, want %q", operaGX.Type, BrowserChromium)
+	}
+	if want := "Opera Software\\Opera GX Stable"; operaGX.RelativePath != want {
+		t.Errorf("Opera GX RelativePath = %q, want %q", operaGX.RelativePath, want)
+	}
 }
